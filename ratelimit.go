@@ -22,18 +22,18 @@ func (mw *Middleware) getRateLimitForEndpoint(path, method string) (int, time.Du
 		strings.HasPrefix(path, "/auth/register") ||
 		strings.HasPrefix(path, "/auth/logout") ||
 		strings.HasPrefix(path, "/auth/refresh") {
-		return mw.cfg.RateLimit.AuthLimit, mw.cfg.RateLimit.AuthWindow
+		return mw.rateLimit.AuthLimit, mw.rateLimit.AuthWindow
 	}
 
 	// Admin endpoints
 	if strings.HasPrefix(path, "/admin") {
-		return mw.cfg.RateLimit.AdminLimit, mw.cfg.RateLimit.AdminWindow
+		return mw.rateLimit.AdminLimit, mw.rateLimit.AdminWindow
 	}
 
 	// Expensive read operations
 	if method == http.MethodGet && (strings.Contains(path, "/products") ||
 		strings.Contains(path, "/search")) {
-		return mw.cfg.RateLimit.ExpensiveLimit, mw.cfg.RateLimit.ExpensiveWindow
+		return mw.rateLimit.ExpensiveLimit, mw.rateLimit.ExpensiveWindow
 	}
 
 	if method == http.MethodGet && strings.HasPrefix(path, "/upload") {
@@ -41,7 +41,7 @@ func (mw *Middleware) getRateLimitForEndpoint(path, method string) (int, time.Du
 	}
 
 	// Default limit for everything else
-	return mw.cfg.RateLimit.GeneralLimit, mw.cfg.RateLimit.GeneralWindow
+	return mw.rateLimit.GeneralLimit, mw.rateLimit.GeneralWindow
 }
 
 // getClientIP extracts the client IP supplied by Cloudflare Tunnel.
@@ -91,7 +91,7 @@ func (mw *Middleware) RateLimitMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Skip if rate limiting is disabled
-			if !mw.cfg.RateLimit.Enabled {
+			if !mw.rateLimit.Enabled {
 				next.ServeHTTP(w, r)
 				return
 			}

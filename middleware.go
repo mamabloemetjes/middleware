@@ -7,7 +7,6 @@ import (
 
 	"github.com/MonkyMars/gecho"
 
-	"github.com/mamabloemetjes/backend/config"
 	"github.com/mamabloemetjes/mdatabase"
 )
 
@@ -54,19 +53,43 @@ type AuthServiceWithUser interface {
 	GetUserByID(ctx context.Context, id string) (*User, error)
 }
 
+// CORSOptions holds CORS configuration passed from the app.
+type CORSOptions struct {
+	AllowedOrigins   []string
+	AllowedMethods   []string
+	AllowedHeaders   []string
+	ExposedHeaders   []string
+	AllowCredentials bool
+	MaxAge           int
+}
+
+// RateLimitConfig holds rate-limiting configuration passed from the app.
+type RateLimitConfig struct {
+	GeneralLimit    int
+	GeneralWindow   time.Duration
+	AuthLimit       int
+	AuthWindow      time.Duration
+	ExpensiveLimit  int
+	ExpensiveWindow time.Duration
+	AdminLimit      int
+	AdminWindow     time.Duration
+	Enabled         bool
+}
+
 // Middleware holds the middleware components.
 type Middleware struct {
 	logger           *gecho.Logger
 	authService      AuthServiceWithUser
 	cacheService     CacheService
-	cfg              *config.Config
+	cors             CORSOptions
+	rateLimit        RateLimitConfig
 	claimsExtractor  ClaimsExtractor
 	responseSender   ResponseSender
 	metricsCollector MetricsCollector
 }
 
 // NewMiddleware creates a new Middleware instance.
-func NewMiddleware(cfg *config.Config, logger *gecho.Logger, db *mdatabase.DB,
+func NewMiddleware(cors CORSOptions, rateLimit RateLimitConfig, logger *gecho.Logger, db *mdatabase.DB,
 	authService AuthServiceWithUser, cacheService CacheService,
 	claimsExtractor ClaimsExtractor, responseSender ResponseSender,
 	metricsCollector MetricsCollector) *Middleware {
@@ -74,7 +97,8 @@ func NewMiddleware(cfg *config.Config, logger *gecho.Logger, db *mdatabase.DB,
 		logger:           logger,
 		authService:      authService,
 		cacheService:     cacheService,
-		cfg:              cfg,
+		cors:             cors,
+		rateLimit:        rateLimit,
 		claimsExtractor:  claimsExtractor,
 		responseSender:   responseSender,
 		metricsCollector: metricsCollector,
